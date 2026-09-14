@@ -1,0 +1,707 @@
+-- ====================================================
+-- Key System Settings (Discord Key)
+-- ====================================================
+local DiscordURL = "https://discord.gg/aESyWYCc6"
+local CorrectKey = "top1.world"
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Prevent duplicate UI execution
+pcall(function()
+    if playerGui:FindFirstChild("KeySystemGUI") then
+        playerGui.KeySystemGUI:Destroy()
+    end
+    if playerGui:FindFirstChild("AdvancedFlyNoclipGui") then
+        playerGui.AdvancedFlyNoclipGui:Destroy()
+    end
+end)
+
+-- Create Key System GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = playerGui
+ScreenGui.Name = "KeySystemGUI"
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
+MainFrame.Size = UDim2.new(0, 300, 0, 200)
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 10)
+mainCorner.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.Text = "Key Verification System"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+Title.Font = Enum.Font.GothamBold
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+
+local TextBox = Instance.new("TextBox")
+TextBox.Parent = MainFrame
+TextBox.PlaceholderText = "Enter key here..."
+TextBox.Text = ""
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+TextBox.Position = UDim2.new(0.1, 0, 0.25, 0)
+TextBox.Size = UDim2.new(0.8, 0, 0, 35)
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 6)
+boxCorner.Parent = TextBox
+
+local VerifyButton = Instance.new("TextButton")
+VerifyButton.Parent = MainFrame
+VerifyButton.Text = "Verify Key"
+VerifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+VerifyButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+VerifyButton.Position = UDim2.new(0.1, 0, 0.48, 0)
+VerifyButton.Size = UDim2.new(0.8, 0, 0, 35)
+
+local vCorner = Instance.new("UICorner")
+vCorner.CornerRadius = UDim.new(0, 6)
+vCorner.Parent = VerifyButton
+
+local GetKeyDiscord = Instance.new("TextButton")
+GetKeyDiscord.Parent = MainFrame
+GetKeyDiscord.Text = "Get Key (Discord)"
+GetKeyDiscord.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetKeyDiscord.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+GetKeyDiscord.Position = UDim2.new(0.1, 0, 0.71, 0)
+GetKeyDiscord.Size = UDim2.new(0.8, 0, 0, 35)
+
+local gCorner = Instance.new("UICorner")
+gCorner.CornerRadius = UDim.new(0, 6)
+gCorner.Parent = GetKeyDiscord
+
+GetKeyDiscord.MouseButton1Click:Connect(function()
+    if setclipboard then
+        setclipboard(DiscordURL)
+        GetKeyDiscord.Text = "Discord Link Copied!"
+        task.wait(2)
+        GetKeyDiscord.Text = "Get Key (Discord)"
+    else
+        GetKeyDiscord.Text = "Clipboard Not Supported"
+    end
+end)
+
+VerifyButton.MouseButton1Click:Connect(function()
+    if TextBox.Text == CorrectKey then
+        ScreenGui:Destroy()
+        
+        -- ====================================================
+        -- Main Script Execution
+        -- ====================================================
+        
+        local RunService = game:GetService("RunService")
+        local UserInputService = game:GetService("UserInputService")
+
+        local flying = false
+        local noclipActive = false
+        local invisibleActive = false
+        local infJumpActive = false
+        
+        local flySpeed = 50
+        local walkSpeed = 16
+        local jumpPower = 50
+        local savedCFrame = nil
+
+        local character, humanoidRootPart, humanoid
+        local bv, bg
+        local flyBtn
+        local noclipBtn
+        local invisibleBtn
+        local infJumpBtn
+        local screenGui
+
+        local function disableAllAndDestroy()
+            pcall(function()
+                flying = false
+                noclipActive = false
+                invisibleActive = false
+                infJumpActive = false
+
+                if bv then bv:Destroy() end
+                if bg then bg:Destroy() end
+                if humanoid then 
+                    humanoid.PlatformStand = false 
+                    humanoid.WalkSpeed = 16
+                    humanoid.JumpPower = 50
+                    humanoid.UseJumpPower = true
+                end
+
+                if character then
+                    for _, part in ipairs(character:GetDescendants()) do
+                        if part:IsA("BasePart") then 
+                            part.CanCollide = true 
+                            if part.Name == "HumanoidRootPart" then 
+                                part.Transparency = 1 
+                            else 
+                                part.Transparency = 0 
+                            end
+                        elseif part:IsA("Decal") then
+                            part.Transparency = 0
+                        end
+                    end
+                end
+
+                if screenGui then
+                    screenGui:Destroy()
+                end
+            end)
+        end
+
+        local function updateCharacter(char)
+            character = char
+            pcall(function()
+                humanoidRootPart = char:WaitForChild("HumanoidRootPart")
+                humanoid = char:WaitForChild("Humanoid")
+                humanoid.UseJumpPower = true
+                humanoid.WalkSpeed = walkSpeed
+                humanoid.JumpPower = jumpPower
+                
+                humanoid.Died:Connect(function()
+                    if flying then
+                        flying = false
+                        if flyBtn then
+                            flyBtn.Text = "الطيران: معطل"
+                            flyBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                        end
+                        pcall(function()
+                            if bv then bv:Destroy() end
+                            if bg then bg:Destroy() end
+                            if humanoid then humanoid.PlatformStand = false end
+                        end)
+                    end
+                end)
+            end)
+        end
+
+        if player.Character then
+            updateCharacter(player.Character)
+        end
+        player.CharacterAdded:Connect(updateCharacter)
+
+        screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "AdvancedFlyNoclipGui"
+        screenGui.ResetOnSpawn = false
+        screenGui.Parent = playerGui
+
+        -- زر الدائرة
+        local toggleButton = Instance.new("TextButton")
+        toggleButton.Name = "CircleButton"
+        toggleButton.Size = UDim2.new(0, 65, 0, 65)
+        toggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(30, 15, 45)
+        toggleButton.Text = "TOP 1\nSCRIPT"
+        toggleButton.TextColor3 = Color3.fromRGB(180, 100, 255)
+        toggleButton.TextSize = 11
+        toggleButton.Font = Enum.Font.GothamBold
+        toggleButton.Parent = screenGui
+
+        local uiCorner = Instance.new("UICorner")
+        uiCorner.CornerRadius = UDim.new(1, 0)
+        uiCorner.Parent = toggleButton
+
+        local uiStroke = Instance.new("UIStroke")
+        uiStroke.Color = Color3.fromRGB(140, 50, 230)
+        uiStroke.Thickness = 2
+        uiStroke.Parent = toggleButton
+
+        -- النافذة الرئيسية (تم زيادة الارتفاع لـ 280 ليظهر كل شيء بوضوح)
+        local mainWindow = Instance.new("Frame")
+        mainWindow.Name = "MainWindow"
+        mainWindow.Size = UDim2.new(0, 520, 0, 280)
+        mainWindow.Position = UDim2.new(0.5, -260, 0.5, -140)
+        mainWindow.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        mainWindow.BackgroundTransparency = 0
+        mainWindow.BorderSizePixel = 0
+        mainWindow.Visible = false
+        mainWindow.Parent = screenGui
+
+        local mainCorner = Instance.new("UICorner")
+        mainCorner.CornerRadius = UDim.new(0, 10)
+        mainCorner.Parent = mainWindow
+
+        -- عنوان النافذة
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.Size = UDim2.new(1, 0, 0, 35)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Text = "TOP 1 SCRIPT"
+        titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        titleLabel.TextSize = 14
+        titleLabel.Font = Enum.Font.GothamBold
+        titleLabel.Parent = mainWindow
+
+        -- نافذة قائمة اللاعبين الجانبية
+        local playersWindow = Instance.new("ScrollingFrame")
+        playersWindow.Name = "PlayersWindow"
+        playersWindow.Size = UDim2.new(0, 240, 0, 280)
+        playersWindow.Position = UDim2.new(1, 10, 0, 0)
+        playersWindow.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        playersWindow.BorderSizePixel = 0
+        playersWindow.Visible = false
+        playersWindow.CanvasSize = UDim2.new(0, 0, 0, 0)
+        playersWindow.ScrollBarThickness = 6
+        playersWindow.Parent = mainWindow
+
+        local pWinCorner = Instance.new("UICorner")
+        pWinCorner.CornerRadius = UDim.new(0, 10)
+        pWinCorner.Parent = playersWindow
+
+        local pWinTitle = Instance.new("TextLabel")
+        pWinTitle.Size = UDim2.new(1, 0, 0, 35)
+        pWinTitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        pWinTitle.Text = "قائمة اللاعبين (اضغط للانتقال)"
+        pWinTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        pWinTitle.TextSize = 11
+        pWinTitle.Font = Enum.Font.GothamBold
+        pWinTitle.Parent = playersWindow
+
+        local uiListLayout = Instance.new("UIListLayout")
+        uiListLayout.Parent = playersWindow
+        uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        uiListLayout.Padding = UDim.new(0, 5)
+
+        -- زر الإغلاق (X)
+        local closeButton = Instance.new("TextButton")
+        closeButton.Name = "CloseButton"
+        closeButton.Size = UDim2.new(0, 28, 0, 28)
+        closeButton.Position = UDim2.new(1, -32, 0, 4)
+        closeButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        closeButton.Text = "X"
+        closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeButton.TextSize = 14
+        closeButton.Font = Enum.Font.GothamBold
+        closeButton.Parent = mainWindow
+
+        local closeCorner = Instance.new("UICorner")
+        closeCorner.CornerRadius = UDim.new(0, 6)
+        closeCorner.Parent = closeButton
+
+        closeButton.MouseButton1Click:Connect(function()
+            disableAllAndDestroy()
+        end)
+
+        -- زر التصغير (-)
+        local minimizeButton = Instance.new("TextButton")
+        minimizeButton.Name = "MinimizeButton"
+        minimizeButton.Size = UDim2.new(0, 28, 0, 28)
+        minimizeButton.Position = UDim2.new(1, -64, 0, 4)
+        minimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        minimizeButton.Text = "-"
+        minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        minimizeButton.TextSize = 16
+        minimizeButton.Font = Enum.Font.GothamBold
+        minimizeButton.Parent = mainWindow
+
+        local minCorner = Instance.new("UICorner")
+        minCorner.CornerRadius = UDim.new(0, 6)
+        minCorner.Parent = minimizeButton
+
+        minimizeButton.MouseButton1Click:Connect(function()
+            mainWindow.Visible = false
+            isOpen = false
+        end)
+
+        local function makeDraggable(guiObject, dragTarget)
+            dragTarget = dragTarget or guiObject
+            local dragging, dragStart, startPos
+            
+            dragTarget.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                    dragStart = input.Position
+                    startPos = guiObject.Position
+                    
+                    input.Changed:Connect(function()
+                        if input.UserInputState == Enum.UserInputState.End then
+                            dragging = false
+                        end
+                    end)
+                end
+            end)
+            
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - dragStart
+                    guiObject.Position = UDim2.new(
+                        startPos.X.Scale, 
+                        startPos.X.Offset + delta.X, 
+                        startPos.Y.Scale, 
+                        startPos.Y.Offset + delta.Y
+                    )
+                end
+            end)
+        end
+
+        makeDraggable(toggleButton)
+        makeDraggable(mainWindow, titleLabel)
+
+        local function createButtonAbs(name, text, posScaleX, posOffsetX, posY, sizeScaleX, sizeOffsetX, color)
+            local btn = Instance.new("TextButton")
+            btn.Name = name
+            btn.Size = UDim2.new(sizeScaleX, sizeOffsetX, 0, 28)
+            btn.Position = UDim2.new(posScaleX, posOffsetX, 0, posY)
+            btn.BackgroundColor3 = color
+            btn.Text = text
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 11
+            btn.Font = Enum.Font.GothamBold
+            btn.Parent = mainWindow
+            
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 6)
+            corner.Parent = btn
+            return btn
+        end
+
+        -- العمود الأيسر
+        flyBtn = createButtonAbs("FlyButton", "الطيران: معطل", 0.03, 0, 40, 0.44, 0, Color3.fromRGB(70, 70, 70))
+        noclipBtn = createButtonAbs("NoclipButton", "اختراق الجدران: معطل", 0.03, 0, 75, 0.44, 0, Color3.fromRGB(70, 70, 70))
+        invisibleBtn = createButtonAbs("InvisibleButton", "الاختفاء: معطل", 0.03, 0, 110, 0.44, 0, Color3.fromRGB(70, 70, 70))
+        infJumpBtn = createButtonAbs("InfJumpButton", "القفز اللانهائي: معطل", 0.03, 0, 145, 0.44, 0, Color3.fromRGB(70, 70, 70))
+        local togglePlayersBtn = createButtonAbs("TogglePlayersBtn", "قائمة اللاعبين (للانتقال)", 0.03, 0, 180, 0.44, 0, Color3.fromRGB(0, 100, 200))
+
+        -- العمود الأيمن
+        local savePosBtn = createButtonAbs("SavePosButton", "حفظ المكان", 0.51, 0, 40, 0.46, 0, Color3.fromRGB(150, 100, 0))
+        local tpPosBtn = createButtonAbs("TpPosButton", "الانتقال للمكان المحفوظ", 0.51, 0, 75, 0.46, 0, Color3.fromRGB(100, 0, 150))
+        local clearPosBtn = createButtonAbs("ClearPosButton", "مسح المكان المحفوظ", 0.51, 0, 110, 0.46, 0, Color3.fromRGB(180, 50, 50))
+
+        -- التحكم بالسرعات والقوة (تعديل الأسماء وتكبير المساحة)
+        -- 1. سرعة الطيران
+        local flySpeedLabel = Instance.new("TextLabel")
+        flySpeedLabel.Size = UDim2.new(0.22, 0, 0, 25)
+        flySpeedLabel.Position = UDim2.new(0.02, 0, 0, 230)
+        flySpeedLabel.BackgroundTransparency = 1
+        flySpeedLabel.Text = "سرعة الطيران: " .. flySpeed
+        flySpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        flySpeedLabel.TextSize = 9
+        flySpeedLabel.Font = Enum.Font.GothamBold
+        flySpeedLabel.Parent = mainWindow
+
+        local flyMinus = createButtonAbs("FlyMinus", "-", 0.23, 0, 228, 0.045, 0, Color3.fromRGB(180, 50, 50))
+        local flyPlus = createButtonAbs("FlyPlus", "+", 0.28, 0, 228, 0.045, 0, Color3.fromRGB(50, 180, 50))
+
+        -- 2. سرعة المشي
+        local walkSpeedLabel = Instance.new("TextLabel")
+        walkSpeedLabel.Size = UDim2.new(0.22, 0, 0, 25)
+        walkSpeedLabel.Position = UDim2.new(0.35, 0, 0, 230)
+        walkSpeedLabel.BackgroundTransparency = 1
+        walkSpeedLabel.Text = "سرعة المشي: " .. walkSpeed
+        walkSpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        walkSpeedLabel.TextSize = 9
+        walkSpeedLabel.Font = Enum.Font.GothamBold
+        walkSpeedLabel.Parent = mainWindow
+
+        local walkMinus = createButtonAbs("WalkMinus", "-", 0.56, 0, 228, 0.045, 0, Color3.fromRGB(180, 50, 50))
+        local walkPlus = createButtonAbs("WalkPlus", "+", 0.61, 0, 228, 0.045, 0, Color3.fromRGB(50, 180, 50))
+
+        -- 3. قوة القفز
+        local jumpPowerLabel = Instance.new("TextLabel")
+        jumpPowerLabel.Size = UDim2.new(0.22, 0, 0, 25)
+        jumpPowerLabel.Position = UDim2.new(0.68, 0, 0, 230)
+        jumpPowerLabel.BackgroundTransparency = 1
+        jumpPowerLabel.Text = "قوة القفز: " .. jumpPower
+        jumpPowerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        jumpPowerLabel.TextSize = 9
+        jumpPowerLabel.Font = Enum.Font.GothamBold
+        jumpPowerLabel.Parent = mainWindow
+
+        local jumpMinus = createButtonAbs("JumpMinus", "-", 0.88, 0, 228, 0.045, 0, Color3.fromRGB(180, 50, 50))
+        local jumpPlus = createButtonAbs("JumpPlus", "+", 0.93, 0, 228, 0.045, 0, Color3.fromRGB(50, 180, 50))
+
+        local isOpen = false
+        toggleButton.MouseButton1Click:Connect(function()
+            isOpen = not isOpen
+            mainWindow.Visible = isOpen
+        end)
+
+        -- تحديث قائمة اللاعبين
+        local function updatePlayersList()
+            for _, child in ipairs(playersWindow:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child:Destroy()
+                end
+            end
+            
+            local count = 0
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player then
+                    count = count + 1
+                    local pBtn = Instance.new("TextButton")
+                    pBtn.Size = UDim2.new(0.95, 0, 0, 30)
+                    pBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                    pBtn.Text = p.Name .. " (" .. p.DisplayName .. ")"
+                    pBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    pBtn.TextSize = 11
+                    pBtn.Font = Enum.Font.Gotham
+                    pBtn.Parent = playersWindow
+                    
+                    local pCorner = Instance.new("UICorner")
+                    pCorner.CornerRadius = UDim.new(0, 6)
+                    pCorner.Parent = pBtn
+                    
+                    pBtn.MouseButton1Click:Connect(function()
+                        pcall(function()
+                            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and humanoidRootPart then
+                                humanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
+                            end
+                        end)
+                    end)
+                end
+            end
+            playersWindow.CanvasSize = UDim2.new(0, 0, 0, 40 + (count * 35))
+        end
+
+        local playersListOpen = false
+        togglePlayersBtn.MouseButton1Click:Connect(function()
+            playersListOpen = not playersListOpen
+            playersWindow.Visible = playersListOpen
+            if playersListOpen then
+                togglePlayersBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+                updatePlayersList()
+            else
+                togglePlayersBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+            end
+        end)
+
+        Players.PlayerAdded:Connect(function()
+            if playersListOpen then updatePlayersList() end
+        end)
+        Players.PlayerRemoving:Connect(function()
+            if playersListOpen then updatePlayersList() end
+        end)
+
+        savePosBtn.MouseButton1Click:Connect(function()
+            pcall(function()
+                if humanoidRootPart then
+                    savedCFrame = humanoidRootPart.CFrame
+                    savePosBtn.Text = "تم حفظ المكان!"
+                    task.wait(1.5)
+                    savePosBtn.Text = "حفظ المكان"
+                end
+            end)
+        end)
+
+        tpPosBtn.MouseButton1Click:Connect(function()
+            pcall(function()
+                if savedCFrame and humanoidRootPart then
+                    humanoidRootPart.CFrame = savedCFrame
+                else
+                    tpPosBtn.Text = "لا يوجد مكان محفوظ!"
+                    task.wait(1.5)
+                    tpPosBtn.Text = "الانتقال للمكان المحفوظ"
+                end
+            end)
+        end)
+
+        clearPosBtn.MouseButton1Click:Connect(function()
+            pcall(function()
+                savedCFrame = nil
+                clearPosBtn.Text = "تم المسح!"
+                task.wait(1.5)
+                clearPosBtn.Text = "مسح المكان المحفوظ"
+            end)
+        end)
+
+        local function toggleFly()
+            flying = not flying
+            if flying then
+                flyBtn.Text = "الطيران: مفعل"
+                flyBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+                if humanoid then pcall(function() humanoid.PlatformStand = true end) end
+                if humanoidRootPart then
+                    pcall(function()
+                        if bv then bv:Destroy() end
+                        if bg then bg:Destroy() end
+                        bv = Instance.new("BodyVelocity")
+                        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                        bv.Velocity = Vector3.new(0, 0, 0)
+                        bv.Parent = humanoidRootPart
+                        bg = Instance.new("BodyGyro")
+                        bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                        bg.CFrame = humanoidRootPart.CFrame
+                        bg.Parent = humanoidRootPart
+                    end)
+                end
+            else
+                flying = false
+                flyBtn.Text = "الطيران: معطل"
+                flyBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                pcall(function()
+                    if bv then bv:Destroy() end
+                    if bg then bg:Destroy() end
+                    if humanoid then humanoid.PlatformStand = false end
+                end)
+            end
+        end
+        flyBtn.MouseButton1Click:Connect(toggleFly)
+
+        local function toggleNoclip()
+            noclipActive = not noclipActive
+            if noclipActive then
+                noclipBtn.Text = "اختراق الجدران: مفعل"
+                noclipBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+            else
+                noclipBtn.Text = "اختراق الجدران: معطل"
+                noclipBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                pcall(function()
+                    if character then
+                        for _, part in ipairs(character:GetDescendants()) do
+                            if part:IsA("BasePart") then part.CanCollide = true end
+                        end
+                    end
+                end)
+            end
+        end
+        noclipBtn.MouseButton1Click:Connect(toggleNoclip)
+
+        local function toggleInvisible()
+            invisibleActive = not invisibleActive
+            if invisibleActive then
+                invisibleBtn.Text = "الاختفاء: مفعل"
+                invisibleBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+                pcall(function()
+                    loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Awesome-Invisible-man-133400"))()
+                end)
+            else
+                invisibleBtn.Text = "الاختفاء: معطل"
+                invisibleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                pcall(function()
+                    if character then
+                        for _, part in ipairs(character:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                if part.Name == "HumanoidRootPart" then part.Transparency = 1 else part.Transparency = 0 end
+                            elseif part:IsA("Decal") then
+                                part.Transparency = 0
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+        invisibleBtn.MouseButton1Click:Connect(toggleInvisible)
+
+        local function toggleInfJump()
+            infJumpActive = not infJumpActive
+            if infJumpActive then
+                infJumpBtn.Text = "القفز اللانهائي: مفعل"
+                infJumpBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+            else
+                infJumpBtn.Text = "القفز اللانهائي: معطل"
+                infJumpBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+            end
+        end
+        infJumpBtn.MouseButton1Click:Connect(toggleInfJump)
+
+        UserInputService.JumpRequest:Connect(function()
+            if infJumpActive then
+                pcall(function()
+                    if humanoid then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    end
+                end)
+            end
+        end)
+
+        flyPlus.MouseButton1Click:Connect(function()
+            flySpeed = flySpeed + 10
+            flySpeedLabel.Text = "سرعة الطيران: " .. flySpeed
+        end)
+        flyMinus.MouseButton1Click:Connect(function()
+            if flySpeed > 10 then
+                flySpeed = flySpeed - 10
+                flySpeedLabel.Text = "سرعة الطيران: " .. flySpeed
+            end
+        end)
+
+        walkPlus.MouseButton1Click:Connect(function()
+            walkSpeed = walkSpeed + 10
+            pcall(function() if humanoid then humanoid.WalkSpeed = walkSpeed end end)
+            walkSpeedLabel.Text = "سرعة المشي: " .. walkSpeed
+        end)
+        walkMinus.MouseButton1Click:Connect(function()
+            if walkSpeed >= 10 then
+                walkSpeed = walkSpeed - 10
+                pcall(function() if humanoid then humanoid.WalkSpeed = walkSpeed end end)
+                walkSpeedLabel.Text = "سرعة المشي: " .. walkSpeed
+            end
+        end)
+
+        jumpPlus.MouseButton1Click:Connect(function()
+            jumpPower = jumpPower + 10
+            pcall(function() 
+                if humanoid then 
+                    humanoid.UseJumpPower = true
+                    humanoid.JumpPower = jumpPower 
+                end 
+            end)
+            jumpPowerLabel.Text = "قوة القفز: " .. jumpPower
+        end)
+        
+        jumpMinus.MouseButton1Click:Connect(function()
+            if jumpPower >= 20 then
+                jumpPower = jumpPower - 10
+                pcall(function() 
+                    if humanoid then 
+                        humanoid.UseJumpPower = true
+                        humanoid.JumpPower = jumpPower 
+                    end 
+                end)
+                jumpPowerLabel.Text = "قوة القفز: " .. jumpPower
+            end
+        end)
+
+        RunService.Stepped:Connect(function()
+            pcall(function()
+                if character then
+                    for _, part in ipairs(character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            if noclipActive then
+                                part.CanCollide = false
+                            end
+                        end
+                    end
+                end
+                
+                if flying and humanoidRootPart and bv and bg then
+                    local camera = workspace.CurrentCamera
+                    local inputDir = Vector3.new(0, 0, 0)
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then inputDir = inputDir + Vector3.new(0, 0, -1) end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then inputDir = inputDir + Vector3.new(0, 0, 1) end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then inputDir = inputDir + Vector3.new(-1, 0, 0) end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then inputDir = inputDir + Vector3.new(1, 0, 0) end
+                    
+                    local moveDirection = Vector3.new(0, 0, 0)
+                    if inputDir.Magnitude == 0 and humanoid then
+                        inputDir = humanoid.MoveDirection
+                        if inputDir.Magnitude > 0 then
+                            local camCF = camera.CFrame
+                            local relDir = camCF:VectorToObjectSpace(inputDir)
+                            moveDirection = (camCF.LookVector * -relDir.Z + camCF.RightVector * relDir.X)
+                        end
+                    else
+                        moveDirection = (camera.CFrame.LookVector * -inputDir.Z + camera.CFrame.RightVector * inputDir.X)
+                    end
+                    
+                    bv.Velocity = moveDirection * flySpeed
+                    bg.CFrame = camera.CFrame
+                end
+            end)
+        end)
+
+    else
+        VerifyButton.Text = "Incorrect Key! Try Again"
+        VerifyButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+        task.wait(2)
+        VerifyButton.Text = "Verify Key"
+        VerifyButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    end
+end)
